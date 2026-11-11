@@ -145,9 +145,9 @@ export function drawShip(ctx, x, y, { colors, which = 0, flip = 1, bank = 0, sca
 
 /**
  * A gate across the playfield at y. segs: [{ x0, x1, which }] in screen x. colors: the skin.
- * swap: 0..1, a swapping gate's flash as it changes. t: time for shimmer.
+ * t: time for shimmer.
  */
-export function drawGate(ctx, y, segs, { colors, t = 0, thick = 22, alpha = 1, warn = 0 } = {}) {
+export function drawGate(ctx, y, segs, { colors, t = 0, thick = 22, alpha = 1 } = {}) {
   ctx.save()
   ctx.globalAlpha = alpha
   for (const s of segs) {
@@ -191,12 +191,6 @@ export function drawGate(ctx, y, segs, { colors, t = 0, thick = 22, alpha = 1, w
     ctx.clip()
     for (let x = x0 - step + off; x < x1 + step; x += step) marker(ctx, x, y, 6, s.which, withAlpha(c, 0.95))
     ctx.restore()
-  }
-  if (warn > 0) {
-    ctx.globalAlpha = warn
-    ctx.fillStyle = '#FFFFFF'
-    ctx.globalCompositeOperation = 'lighter'
-    for (const s of segs) ctx.fillRect(s.x0, y - 3, s.x1 - s.x0, 6)
   }
   ctx.restore()
 }

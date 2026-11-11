@@ -48,9 +48,10 @@ const TUNING = {
   wastedFlipAhead: 400, // a flip with no gate this close above the screen breaks the streak
   shieldStars: 120, // stars in one run to charge the shield (a lot, on purpose)
   shieldGrace: 1.2, // seconds the ship can't be hit after its shield breaks
-  swapLead: 0.65, // a swapping gate changes this long before it reaches the ship (at the dashed line)
-  swapWarn: 1.6, // its next colour shows this long before it swaps
-  swapFlicker: 0.4, // and it flickers between both colours for the last part
+  // Sliding gates: the line between two colours (or a narrow gap's opening) glides side to side.
+  slideAmp: [120, 200], // how far a split gate's divider swings from the middle (px)
+  slideGapAmp: [90, 150], // how far a sliding gap's opening swings
+  slidePeriod: [2.6, 3.4], // seconds for one full swing there and back
   gapWidth: 190, // a narrow gap's opening when they first appear ...
   gapMin: 130, // ... shrinking to this
   gapShrink: 0.6, // px per second of run time after they appear
@@ -60,7 +61,7 @@ const TUNING = {
     { at: 0, name: null },
     { at: 30, name: 'Split gates', tip: 'Steer into your colour, or flip' },
     { at: 55, name: 'Narrow gaps', tip: 'Thread the gap in your colour' },
-    { at: 80, name: 'Swapping gates', tip: 'They swap colour at the dashed line' },
+    { at: 80, name: 'Sliding gates', tip: 'Their colours slide side to side' },
     { at: 105, name: 'Drifting rocks', tip: 'They slide sideways' },
     { at: 130, name: 'Three-way gates', tip: 'Find your lane' }
   ],
@@ -484,7 +485,7 @@ function play(rawDt) {
     } else if (th.kind === 'dust') {
       if (!th.taken && Math.abs(th.x - s.x) < 44 && Math.abs(th.y - sy) < 44) collectDust(th)
     } else if (th.kind === 'gate') {
-      if (th.swap && !th.swapped && th.y >= sy - state.speed * TUNING.swapLead) swapGate(th)
+      if (th.slide && !th.passed) slideGate(th, dt)
       if (!th.passed && prevY < sy && th.y >= sy) {
         th.passed = true
         const at = (x) => th.segs.find((g) => x >= g.x0 && x < g.x1) ?? th.segs[0]
@@ -616,13 +617,20 @@ function breakShield(th) {
   loseStreak('STREAK LOST')
 }
 
-function swapGate(g) {
-  g.swapped = true
-  g.swapFlash = state.clock
-  for (const seg of g.segs) seg.which = 1 - seg.which
-  audio.tone({ freq: 300, dur: 0.12, type: 'sawtooth', gain: 0.07, slide: 300 })
-  const o = ox()
-  for (const seg of g.segs) for (let i = 0; i < 6; i++) spark(o + seg.x0 + Math.random() * (seg.x1 - seg.x0), g.y, 0, (Math.random() - 0.5) * 200, '#FFFFFF', 0.3)
+/**
+ * A sliding gate moves every inner edge (the divider between colours, or a gap's opening) by the
+ * same smooth sideways swing. The segments are moved in place so the one the ship is in stays
+ * the same object; it stops moving once the ship has crossed it.
+ */
+function slideGate(g, dt) {
+  const sl = g.slide
+  sl.t += dt
+  const off = sl.amp * Math.sin(sl.phase + (sl.t * Math.PI * 2) / sl.period)
+  const last = g.segs.length - 1
+  g.segs.forEach((seg, i) => {
+    if (i > 0) seg.x0 = sl.base[i][0] + off
+    if (i < last) seg.x1 = sl.base[i][1] + off
+  })
 }
 
 function collectDust(d) {
@@ -693,11 +701,10 @@ function lanes(n, first) {
  * A wall with a narrow opening (or, later, two openings of different colours far apart): the ship
  * has to thread it, in the opening's colour. The opening narrows the longer the run goes.
  */
-function gapSegs(first, two) {
+function gapSegs(first, two, margin = 60) {
   const C = TUNING.column
   const since = Math.max(0, state.t - TUNING.stages[2].at)
   const w = Math.max(TUNING.gapMin, TUNING.gapWidth - since * TUNING.gapShrink)
-  const margin = 60
   const openings = []
   if (two) {
     const a = rnd(margin, C / 2 - w - 40)
@@ -737,7 +744,7 @@ function spawnPattern() {
     const options = [['rocks', 3], ['gate', 3], ['dust', 1]]
     if (st >= 1) options.push(['split2', 3])
     if (st >= 2) options.push(['gap', 3])
-    if (st >= 3) options.push(['swap', 3])
+    if (st >= 3) options.push(['slide', 3])
     if (st >= 5) options.push(['split3', 2])
     if (!state.firstGate) options.splice(1, 1) // only rocks and dust before the teaching gate
     let total = options.reduce((a, [, w]) => a + w, 0)
@@ -772,9 +779,15 @@ function spawnPattern() {
         const lead = Math.max(260, v * 0.32)
         items.push(rock((seg.x0 + seg.x1) / 2, top + lead, rnd(30, 40)))
       }
-    } else if (kind === 'swap') {
-      const segs = Math.random() < 0.5 ? [{ x0: 0, x1: C, which: which() }] : lanes(2, which())
-      items.push(gate(top, segs, { swap: true }))
+    } else if (kind === 'slide') {
+      // Half are a two-lane split whose divider glides, half a narrow gap whose opening glides.
+      const isGap = Math.random() < 0.5
+      const amp = rnd(...(isGap ? TUNING.slideGapAmp : TUNING.slideAmp))
+      const segs = isGap ? gapSegs(which(), false, 60 + amp) : lanes(2, which())
+      const slide = { amp, period: rnd(...TUNING.slidePeriod), phase: rnd(0, Math.PI * 2), t: 0, base: segs.map((g) => [g.x0, g.x1]) }
+      const g = gate(top, segs, { slide })
+      slideGate(g, 0)
+      items.push(g)
     } else if (kind === 'gap') {
       items.push(gate(top, gapSegs(which(), st >= 3 && Math.random() < 0.5)))
     }
@@ -1268,8 +1281,7 @@ function drawPlay() {
     } else if (th.kind === 'gate') {
       const segs = th.segs.map((g, i) => ({ x0: o + g.x0 - (i === 0 ? o : 0), x1: o + g.x1 + (i === th.segs.length - 1 ? w - o - TUNING.column : 0), which: g.which, gone: g === th.shattered }))
       const visible = segs.filter((g) => !g.gone)
-      if (th.swap && !th.swapped) drawSwapGate(th, visible, sy)
-      else drawGate(ctx, th.y, visible, { colors: c, t: state.clock, warn: th.swapFlash ? Math.max(0, th.swapFlash - state.clock + 0.25) * 3 : 0 })
+      drawGate(ctx, th.y, visible, { colors: c, t: state.clock })
     }
   }
   // Trail.
@@ -1311,64 +1323,6 @@ function drawPlay() {
   }
   if (state.screen === 'playing' && state.dying <= 0) drawHints(o, sy)
   drawHud()
-}
-
-/**
- * A swapping gate says so all the way down: ⇄ marks on it, its next colour riding just above it and
- * brightening as it nears the dashed swap line, then a flicker between both colours right before
- * the swap.
- */
-function drawSwapGate(th, segs, sy) {
-  const c = colors()
-  const untilSwap = (sy - state.speed * TUNING.swapLead - th.y) / state.speed
-  const near = Math.max(0, Math.min(1, 1 - untilSwap / TUNING.swapWarn))
-  const flicker = untilSwap < TUNING.swapFlicker && Math.floor(state.clock * 12) % 2 === 0
-  const shown = segs.map((g) => (flicker ? { ...g, which: 1 - g.which } : g))
-  // The swap line: where the gate will change, dashed in both colours.
-  const ly = sy - state.speed * TUNING.swapLead
-  if (th.y < ly) {
-    ctx.save()
-    ctx.lineWidth = 4
-    ctx.setLineDash([22, 22])
-    for (const [i, col] of c.entries()) {
-      ctx.lineDashOffset = -state.clock * 60 + i * 22
-      ctx.strokeStyle = withAlpha(col, 0.35 + 0.5 * near)
-      ctx.beginPath()
-      ctx.moveTo(0, ly)
-      ctx.lineTo(fit.w, ly)
-      ctx.stroke()
-    }
-    ctx.restore()
-    ctx.font = font(900, 36)
-    ctx.fillStyle = withAlpha(PALETTE.text, 0.5 + 0.5 * near)
-    ctx.fillText('⇄', ox() + 30, ly - 28)
-    ctx.fillText('⇄', ox() + TUNING.column - 30, ly - 28)
-  }
-  // The colours it will become, riding just above it and brightening as it nears the line.
-  const ghost = segs.map((g) => ({ ...g, which: 1 - g.which }))
-  drawGate(ctx, th.y - 64, ghost, { colors: c, t: state.clock, thick: 14, alpha: 0.45 + 0.55 * near })
-  drawGate(ctx, th.y, shown, { colors: c, t: state.clock })
-  // A ⇄ chip on each segment, filled with the colour it turns into, with a countdown ring.
-  for (const g of segs) {
-    const x = (g.x0 + g.x1) / 2
-    const next = c[1 - g.which]
-    const r = 30
-    ctx.fillStyle = next
-    ctx.beginPath()
-    ctx.arc(x, th.y - 30, r, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)'
-    ctx.lineWidth = 6
-    ctx.beginPath()
-    ctx.arc(x, th.y - 30, r + 8, 0, Math.PI * 2)
-    ctx.stroke()
-    const ring = new Path2D()
-    ring.arc(x, th.y - 30, r + 8, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * near)
-    glowStroke(ctx, ring, '#FFFFFF', 6, 0.5)
-    ctx.font = font(900, 36)
-    ctx.fillStyle = PALETTE.bg
-    ctx.fillText('⇄', x, th.y - 28)
-  }
 }
 
 /** Teaching by doing: say how to flip while a wrong-coloured gate is coming in the first runs. */

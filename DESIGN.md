@@ -2,7 +2,7 @@
 
 > Slide your thumb to weave a tiny starship through an asteroid stream, and tap to flip its colour so it slips through matching energy gates. How far can you get?
 
-*Status: shipped · Version: 1.3.0*
+*Status: shipped · Version: 1.4.0*
 
 ## Kickoff
 Answers from the kickoff interview ([kickoff.md](../../docs/game-design/kickoff.md)). Mark anything you decided yourself as *(assumed)*.
@@ -80,7 +80,7 @@ Answers from the kickoff interview ([kickoff.md](../../docs/game-design/kickoff.
 
 ## Scope
 **v1 must-haves**
-- Steering + flipping on every input; rocks, full gates, split gates (2 and 3 lanes), narrow gaps, drifting rocks, swapping gates, ramp
+- Steering + flipping on every input; rocks, full gates, split gates (2 and 3 lanes), narrow gaps, drifting rocks, sliding gates, ramp
 - Score from actions only, streak multiplier, star-charged shield, distance record; best saved; stars banked
 - Title with the Hangar (buy and pick colours with banked stars), pause, settings (+ vibration toggle), game over with a counting tally and one-press retry
 - Music + SFX, juice, reduced shake
@@ -91,8 +91,8 @@ Answers from the kickoff interview ([kickoff.md](../../docs/game-design/kickoff.
 ## Definition of done
 **Play**
 - [ ] First gate teaches the flip by doing (`${input.label('a')} to flip` hint while the wrong colour approaches)
-- [ ] Something new every ~25 s: split gates (30 s), narrow gaps (55 s, the opening shrinks from 190 to 130 px as the run goes on), swapping gates (80 s), drifting rocks (105 s), 3-lane gates (130 s). No double gates (cut in 1.1.0)
-- [ ] Swapping gates are obvious before they swap: a ⇄ chip on each segment filled with the colour it becomes and a ring that fills as it nears, the next colours riding above the gate, a dashed swap line in both colours, and a flicker in the last 0.4 s
+- [ ] Something new every ~25 s: split gates (30 s), narrow gaps (55 s, the opening shrinks from 190 to 130 px as the run goes on), sliding gates (80 s), drifting rocks (105 s), 3-lane gates (130 s). No double gates (cut in 1.1.0)
+- [ ] Sliding gates read by motion alone, with nothing extra drawn: a two-lane split whose divider glides 120–200 px either side of the middle, or a narrow gap whose opening glides 90–150 px, one full swing every 2.6–3.4 s. Colours never change, so what you see is what you cross; every lane stays at least 160 px wide, and the gate stops moving once crossed
 - [ ] Fair: spacing between threats never under the reaction time at the current speed; nothing spawns inside the thumb area unseen
 - [ ] Retry in one press; best score and farthest distance; stars banked and spent in the Hangar; the results tally shows what the score was made of
 
@@ -128,6 +128,7 @@ Answers from the kickoff interview ([kickoff.md](../../docs/game-design/kickoff.
 
 ## Changelog
 - 1.0.0: First version.
+- 1.4.0: Swapping gates removed (the ghost gate, dashed swap line and flicker were confusing and disorienting). In their place from 80 s: **sliding gates**, where a split gate's colour divider or a narrow gap's opening glides side to side, so you track your lane or flip instead of guessing when it changes.
 - 1.3.0: New scoring. Score comes only from gates (50), late flips (+50) and stars (10), all times the multiplier; distance is its own record. The multiplier is a streak (×2 at 5, ×3 at 10, ×4 at 20, ×5 at 35; late flips count double), shown with a bar in the HUD and reset by a wasted flip or a broken shield. 120 stars in one run charge a one-hit shield. Stars are banked and spend in the new Hangar on ship colours (★ 300 / 750 / 1 500 / 3 000). Game over counts up a tally (gates, late flips, stars) before the score. Saves move to v2: best score resets (old scores counted distance), farthest distance and colours already earned are kept.
 - 1.2.1: Fixed a white haze left over the game over and menus after a crash.
 - 1.2.0: New menu look (flight console panels, ship cursor, Chakra Petch), controls shown as HUD tags in the title scene instead of text at the bottom, asteroids kept clear of the menu.

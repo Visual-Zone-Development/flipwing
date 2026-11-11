@@ -1,0 +1,33 @@
+{
+  "$schema": "./.github/pushplay/manifest.schema.json",
+  "id": "flipwing",
+  "name": "Flipwing",
+  "description": "Slide your thumb to weave a starship through an asteroid stream and tap to flip its colour through matching energy gates. Build a streak for a bigger multiplier, flip at the last moment for bonus points, and collect stars to charge a shield and buy new ship colours.",
+  "version": "1.3.0",
+  "entry": {
+    "web": "index.html"
+  },
+  "art": {
+    "cover": "art/cover.html",
+    "hero": "art/hero.html"
+  },
+  "controls": "gamepad",
+  "inputs": [
+    "gamepad",
+    "keyboard",
+    "mouse",
+    "touch"
+  ],
+  "players": "1",
+  "tags": [
+    "arcade",
+    "space",
+    "endless",
+    "one-handed",
+    "neon"
+  ],
+  "phone": {
+    "orientation": "portrait"
+  },
+  "movedFrom": "Visual-Zone-Development/my-pushplay-games"
+}

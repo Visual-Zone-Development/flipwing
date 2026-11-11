@@ -1,0 +1,24 @@
+{
+  "name": "flipwing",
+  "private": true,
+  "type": "module",
+  "description": "Slide your thumb to weave a starship through an asteroid stream and tap to flip its colour through matching energy gates. Build a streak for a bigger multiplier, flip at the last moment for bonus points, and collect stars to charge a shield and buy new ship colours.",
+  "scripts": {
+    "setup": "npm install && node .github/pushplay/node_modules/playwright/cli.js install chromium",
+    "postinstall": "npm ci --prefix .github/pushplay --no-audit --no-fund || npm install --prefix .github/pushplay --no-audit --no-fund",
+    "new-game": "node .github/pushplay/new-game.mjs",
+    "dev": "node .github/pushplay/dev.mjs",
+    "check": "node .github/pushplay/check.mjs",
+    "update-kit": "node .github/pushplay/update-kit.mjs",
+    "art": "node tools/art/generate.mjs",
+    "art:shots": "node tools/art/shots.mjs",
+    "promote": "node tools/promote/promote.mjs",
+    "test": "node --test \"tools/**/*.test.mjs\""
+  },
+  "devDependencies": {
+    "vite": "^7.3.7"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}

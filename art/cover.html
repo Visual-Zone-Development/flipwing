@@ -1,0 +1,33 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+html,body{margin:0;width:720px;height:500px;overflow:hidden;background:#070B1A}
+canvas{position:absolute;inset:0}
+h1{position:absolute;left:0;right:0;top:22px;margin:0;text-align:center;font:700 112px/1 'Chakra Petch',sans-serif;letter-spacing:2px;color:#fff}
+h1 span{-webkit-text-stroke:0}
+h1 .a{text-shadow:0 0 6px #3CF2FF,0 0 18px #3CF2FF,0 0 36px #3CF2FF}
+h1 .b{text-shadow:0 0 6px #FF4FD8,0 0 18px #FF4FD8,0 0 36px #FF4FD8}
+</style></head><body>
+<canvas id="c" width="720" height="500"></canvas>
+<h1><span class="a">FLIP</span><span class="b">WING</span></h1>
+<script type="module">
+import { drawShip, drawGate, drawRock, rockShape, drawBackdrop, makeStars, SKINS, withAlpha, halo } from '../art.js'
+const ctx = document.getElementById('c').getContext('2d')
+const W = 720, H = 500, colors = SKINS[0].colors
+drawBackdrop(ctx, W, H, { stars: makeStars(90, W, H, 3), speed: 900, t: 1 })
+drawRock(ctx, 70, 250, 50, rockShape(50, 3), 0.4)
+drawRock(ctx, 660, 200, 36, rockShape(36, 9), 1)
+drawRock(ctx, 610, 345, 26, rockShape(26, 4), 2)
+// Trail: cyan below the gate, magenta above.
+const trail = (y0, y1, c) => { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, withAlpha(c, 0)); g.addColorStop(1, withAlpha(c, 0.6))
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(W/2 - 20, y1); ctx.lineTo(W/2 + 20, y1); ctx.lineTo(W/2 + 5, y0); ctx.lineTo(W/2 - 5, y0); ctx.fill(); ctx.restore() }
+trail(500, 330, colors[0]); trail(330, 290, colors[1])
+drawGate(ctx, 330, [{ x0: 0, x1: 280, which: 0 }, { x0: 280, x1: 440, which: 1 }, { x0: 440, x1: W, which: 0 }], { colors, t: 0.4, thick: 20 })
+halo(ctx, W/2, 330, 170, colors[1], 0.3)
+ctx.save(); ctx.globalCompositeOperation = 'lighter'
+for (let i = 0; i < 34; i++) { const a = i * 2.39, d = 40 + (i * 37) % 110, l = 8 + (i * 13) % 18
+  ctx.strokeStyle = withAlpha(i % 2 ? colors[1] : '#FFFFFF', 0.7); ctx.lineWidth = 3
+  ctx.beginPath(); ctx.moveTo(W/2 + Math.cos(a) * d, 330 + Math.sin(a) * d * 0.45); ctx.lineTo(W/2 + Math.cos(a) * (d + l), 330 + Math.sin(a) * (d + l) * 0.45); ctx.stroke() }
+ctx.restore()
+drawShip(ctx, W/2, 228, { colors, which: 1, scale: 1.55, t: 0.2, thrust: 1.6 })
+await document.fonts.ready
+</script></body></html>

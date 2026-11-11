@@ -1,0 +1,30 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+html,body{margin:0;width:1920px;height:450px;overflow:hidden;background:#070B1A}canvas{position:absolute;inset:0}
+</style></head><body>
+<canvas id="c" width="1920" height="450"></canvas>
+<script type="module">
+import { drawShip, drawGate, drawRock, rockShape, drawDust, drawBackdrop, makeStars, SKINS, withAlpha, halo } from '../art.js'
+const ctx = document.getElementById('c').getContext('2d')
+const W = 1920, H = 450, colors = SKINS[0].colors
+drawBackdrop(ctx, W, H, { stars: makeStars(260, W, H, 11), speed: 1000, t: 2 })
+// Right half: the action, tilted so the stream runs diagonally.
+ctx.save()
+ctx.translate(1400, 225)
+ctx.rotate(-0.35)
+const segs = (y, first) => [{ x0: -700, x1: -60, which: first }, { x0: -60, x1: 160, which: 1 - first }, { x0: 160, x1: 700, which: first }]
+drawGate(ctx, 150, segs(150, 0), { colors, t: 0.3, thick: 22 })
+drawGate(ctx, -330, [{ x0: -700, x1: 700, which: 0 }], { colors, t: 0.9, thick: 22, alpha: 0.8 })
+drawRock(ctx, -330, -60, 58, rockShape(58, 5), 0.3)
+drawRock(ctx, 330, 40, 44, rockShape(44, 12), 1.2)
+drawRock(ctx, 240, -300, 34, rockShape(34, 2), 2)
+for (let i = 0; i < 4; i++) drawDust(ctx, 50, -150 - i * 50, i)
+const g = ctx.createLinearGradient(0, 330, 0, 120); g.addColorStop(0, withAlpha(colors[0], 0)); g.addColorStop(1, withAlpha(colors[0], 0.55))
+ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(30, 330); ctx.lineTo(70, 330); ctx.lineTo(75, 110); ctx.lineTo(25, 110); ctx.fill(); ctx.globalCompositeOperation = 'source-over'
+halo(ctx, 50, 150, 150, colors[1], 0.3)
+drawShip(ctx, 50, 40, { colors, which: 1, scale: 1.7, t: 0.4, thrust: 1.8 })
+ctx.restore()
+// Keep the bottom-left calm for the launcher's title.
+const fade = ctx.createLinearGradient(0, 0, 900, 0); fade.addColorStop(0, 'rgba(7,11,26,0.55)'); fade.addColorStop(1, 'rgba(7,11,26,0)')
+ctx.fillStyle = fade; ctx.fillRect(0, 0, 900, H)
+</script></body></html>
